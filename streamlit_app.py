@@ -87,11 +87,12 @@ def nasa_fotd(api_key):
     nasa_potd = requests.get(
         "https://api.nasa.gov/planetary/apod?api_key={0}".format(api_key)).json()
     # separate image and info into columns
+    app.markdown("#### **Fact of the Day**")
     col1, col2 = app.columns([1,2])
     with col1:
         app.image(nasa_potd["hdurl"], width=450)
     with col2:
-        app.write("Fact of the day: {0}".format(nasa_potd["explanation"]))
+        app.write(nasa_potd["explanation"])
 
 def space_coast_weather():
     space_center_weather = requests.get(

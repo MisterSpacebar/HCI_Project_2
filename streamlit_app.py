@@ -1,7 +1,7 @@
 import pandas as pd
 import streamlit as app
 from datetime import date
-from datetime import timedelta
+from datetime import datetime
 import requests
 import json
 
@@ -11,6 +11,9 @@ app.set_page_config(layout="wide")
 # API requests on page load for non-dynamic routes
 spacex_past_launches = requests.get("https://api.spacexdata.com/v5/launches/past").json()
 spacex_all_launches = requests.get("https://api.spacexdata.com/v5/launches").json()
+
+# master launch date list
+spacex_launch_date_list = []
 
 nasa_key = "jIUaYAKcKc59QEa9el6p1mFpiBBrRTjMY2rb99f5"
 nasa_launch_location = {
@@ -38,6 +41,46 @@ def international_space_station():
     # custom CSS to make the outside div a little smaller
     styl = "<style> iframe[title='st.iframe'] {height:100%;width:100%}</style>"
     app.markdown(styl, unsafe_allow_html=True)
+
+def spacex_date_select():
+    # date formatting
+    date_format = "%Y-%m-%d"
+    date_today = date.today()
+    # create an array of dates to quickly reference from and to
+    launch_dates_now = [""]
+    launch_dates_future = [""]
+    for index in spacex_all_launches:
+        date_temp = index["date_utc"]
+        spacex_launch_date_list.append(date_temp[0:10])
+        datetime_temp = datetime.strptime(date_temp[0:10],date_format).date()
+        if datetime_temp < date_today: # past
+            launch_dates_now.append(date_temp[0:10])
+        elif datetime_temp > date_today: # future
+            launch_dates_future.append(date_temp[0:10])
+        else: # present
+            launch_dates_now.append(date_temp[0:10])
+    col1,col2 = app.columns([1,4])
+    with col1:
+        # ask user how they want to categorize search
+        past_future = app.radio("Present or Future launches?",options=('Present','Future','All Launches'))
+        # custom CSS to have the radio buttons in a line
+        app.write('<style>div.row-widget.stRadio > div{flex-direction:row;}</style>', unsafe_allow_html=True)
+        templist = [""]
+        if past_future == 'Present':
+            templist = launch_dates_now
+        elif past_future == 'Future':
+            templist = launch_dates_future
+        else:
+            for index in spacex_launch_date_list:
+                templist.append(index)
+    with col2:
+        date_select = app.selectbox("Search or select a launch date (YYYY-MM-DD)...", templist)
+    # return the date if true
+    if date_select:
+        app.write(date_select)
+        return date_select
+    elif date_select not in templist: # doesn't exist, try again
+        app.write("This is not a date, please try again")
 
 def nasa_fotd(api_key):
     nasa_potd = requests.get(
@@ -67,7 +110,7 @@ def space_coast_weather():
     else:
         app.write("Not available")
 
-def past_launch_graphs():
+def past_launch_count():
     app.write("Timeline of Space X Launches")
     # count how many launches per pear by brute force
     launch_years = []
@@ -81,12 +124,6 @@ def past_launch_graphs():
     # display chart
     app.bar_chart(launch_data)
 
-def spacex_launch_search():
-    # create an array of dates to quickly reference from and to
-    spacex_launch_date_list = []
-    for index in spacex_all_launches:
-        date_temp = index["date_utc"]
-        spacex_launch_date_list.append(date_temp[0:9])
-        
-
 app.title("SPACE!")
+
+spacex_date_select()

@@ -52,7 +52,8 @@ def spacex_date_select():
     for index in spacex_all_launches:
         date_temp = index["date_utc"]
         spacex_launch_date_list.append(date_temp[0:10])
-        datetime_temp = datetime.strptime(date_temp[0:10],date_format).date()
+        datetime_temp = datetime.strptime(date_temp[0:10],date_format)
+        datetime_temp = datetime_temp.date()
         if datetime_temp < date_today: # past
             launch_dates_now.append(date_temp[0:10])
         elif datetime_temp > date_today: # future

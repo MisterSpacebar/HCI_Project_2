@@ -1,5 +1,6 @@
 import pandas as pd
 import streamlit as app
+import streamlit.components.v1 as components
 from datetime import date
 from datetime import datetime
 import requests
@@ -35,13 +36,21 @@ def map_creator(latitude,longitude):
 
 # displays ISS location in relation to globe
 def international_space_station():
-    app.write("Current ISS Location")
     iss_position = requests.get("http://api.open-notify.org/iss-now.json").json()
-    map_creator(iss_position["iss_position"]["latitude"], iss_position["iss_position"]["longitude"])
-    # custom CSS to make the outside div a little smaller
-    styl = "<style> iframe[title='st.iframe'] {height:100%;width:100%}</style>"
-    app.markdown(styl, unsafe_allow_html=True)
-    
+    col1,col2 = app.columns(2)
+    with col1:
+        app.markdown("#### **Current Location of the ISS**")
+        map_creator(iss_position["iss_position"]["latitude"], iss_position["iss_position"]["longitude"])
+        # custom CSS to make the outside div a little smaller
+        styl = "<style> iframe[title='st.iframe'] {height:200%;width:100%}</style>"
+        app.markdown(styl, unsafe_allow_html=True)
+    with col2:
+        iss_personel = requests.get("http://api.open-notify.org/astros.json").json()
+        app.markdown("#### **People on the ISS**")
+        # write directly to page
+        for people in iss_personel['people']:
+            app.write(people['name'])
+
 def now_later_list():
     # structure output
     past_and_future = {
@@ -51,9 +60,11 @@ def now_later_list():
     # date formatting
     date_format = "%Y-%m-%d"
     date_today = date.today()
+    # create date lists
     for index in spacex_all_launches:
         date_temp = index["date_utc"]
         spacex_launch_date_list.append(date_temp[0:10])
+        # format temp variant to date format
         datetime_temp = datetime.strptime(date_temp[0:10],date_format)
         datetime_temp = datetime_temp.date()
         if datetime_temp < date_today: # past
@@ -62,6 +73,7 @@ def now_later_list():
             past_and_future['later'].append(date_temp[0:10])
         else: # present
             past_and_future['now'].append(date_temp[0:10])
+    # return object
     return past_and_future
 
 def spacex_date_select():
@@ -136,3 +148,4 @@ app.title("SPACE!")
 
 spacex_date_select()
 nasa_fotd(nasa_key)
+international_space_station()

@@ -26,7 +26,7 @@ def map_creator(latitude,longitude):
     from streamlit_folium import folium_static
     import folium
     # center on the station
-    f = folium.Figure(width=300, height=250)
+    f = folium.Figure(width=400, height=350)
     m = folium.Map(location=[latitude, longitude], zoom_start=2, max_bounds=True).add_to(f)
     # add marker for the station
     folium.Marker([latitude, longitude], popup="International Space Station", tooltip="International Space Station").add_to(m)
@@ -41,40 +41,46 @@ def international_space_station():
     # custom CSS to make the outside div a little smaller
     styl = "<style> iframe[title='st.iframe'] {height:100%;width:100%}</style>"
     app.markdown(styl, unsafe_allow_html=True)
-
-def spacex_date_select():
+    
+def now_later_list():
+    # structure output
+    past_and_future = {
+        'now':[""],
+        'later':[""]
+    }
     # date formatting
     date_format = "%Y-%m-%d"
     date_today = date.today()
-    # create an array of dates to quickly reference from and to
-    launch_dates_now = [""]
-    launch_dates_future = [""]
     for index in spacex_all_launches:
         date_temp = index["date_utc"]
         spacex_launch_date_list.append(date_temp[0:10])
         datetime_temp = datetime.strptime(date_temp[0:10],date_format)
         datetime_temp = datetime_temp.date()
         if datetime_temp < date_today: # past
-            launch_dates_now.append(date_temp[0:10])
+            past_and_future['now'].append(date_temp[0:10])
         elif datetime_temp > date_today: # future
-            launch_dates_future.append(date_temp[0:10])
+            past_and_future['later'].append(date_temp[0:10])
         else: # present
-            launch_dates_now.append(date_temp[0:10])
+            past_and_future['now'].append(date_temp[0:10])
+    return past_and_future
+
+def spacex_date_select():
+    # split option and search and arrange them into same row
     col1,col2 = app.columns([1,4])
-    with col1:
+    with col1: # select past/present/future
         # ask user how they want to categorize search
         past_future = app.radio("Present or Future launches?",options=('Present','Future','All Launches'))
         # custom CSS to have the radio buttons in a line
         app.write('<style>div.row-widget.stRadio > div{flex-direction:row;}</style>', unsafe_allow_html=True)
-        templist = [""]
+        templist = now_later_list()
         if past_future == 'Present':
-            templist = launch_dates_now
+            templist = templist['now']
         elif past_future == 'Future':
-            templist = launch_dates_future
+            templist = templist['later']
         else:
             for index in spacex_launch_date_list:
                 templist.append(index)
-    with col2:
+    with col2: # drop-down menu with search
         date_select = app.selectbox("Search or select a launch date (YYYY-MM-DD)...", templist)
     # return the date if true
     if date_select:
@@ -86,12 +92,12 @@ def spacex_date_select():
 def nasa_fotd(api_key):
     nasa_potd = requests.get(
         "https://api.nasa.gov/planetary/apod?api_key={0}".format(api_key)).json()
-    # separate image and info into columns
     app.markdown("#### **Fact of the Day**")
+    # separate image and info into columns
     col1, col2 = app.columns([1,2])
-    with col1:
+    with col1: # image
         app.image(nasa_potd["hdurl"], width=450)
-    with col2:
+    with col2: # factoid
         app.write(nasa_potd["explanation"])
 
 def space_coast_weather():
@@ -120,7 +126,7 @@ def past_launch_count():
         d = i["date_utc"]
         current_year = d[0:4]
         launch_years.append(current_year)
-    # turn array into object of 'year':'count'
+    # turn array into object with 'year':'count'
     spacex_launches = {i: launch_years.count(i) for i in launch_years}
     launch_data = pd.Series(spacex_launches)
     # display chart
@@ -129,3 +135,4 @@ def past_launch_count():
 app.title("SPACE!")
 
 spacex_date_select()
+nasa_fotd(nasa_key)

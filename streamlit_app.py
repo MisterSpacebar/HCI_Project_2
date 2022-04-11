@@ -45,7 +45,7 @@ def international_space_station():
     iss_position = requests.get("http://api.open-notify.org/iss-now.json").json()
     iss_personel = requests.get("http://api.open-notify.org/astros.json").json()
     iss_personel = iss_personel['people']
-    half = (len(iss_personel) // 2)
+    half = (len(iss_personel) // 2) # must be int
     # content
     col1, col2, col3 = app.columns([2, 1, 1])
     with col1: # ISS map
@@ -60,8 +60,6 @@ def international_space_station():
     with col3: # other half of personnel
         for people in iss_personel[half:]:
             app.write(people['name'])
-
-
 
 def now_later_list():
     # structure output

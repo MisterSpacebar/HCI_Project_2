@@ -36,27 +36,36 @@ def map_creator(latitude,longitude):
 
 # displays ISS location in relation to globe
 def international_space_station():
-    iss_position = requests.get("http://api.open-notify.org/iss-now.json").json()
-    col1,col2 = app.columns(2)
-    with col1:
+    # header for component
+    head1,head2 = app.columns(2)
+    with head1:
         app.markdown("#### **Current Location of the ISS**")
+    with head2:
+        app.markdown("#### **People on the ISS**")
+    iss_position = requests.get("http://api.open-notify.org/iss-now.json").json()
+    iss_personel = requests.get("http://api.open-notify.org/astros.json").json()
+    iss_personel = iss_personel['people']
+    half = (len(iss_personel) // 2)
+    # content
+    col1, col2, col3 = app.columns([2, 1, 1])
+    with col1: # ISS map
         map_creator(iss_position["iss_position"]["latitude"], iss_position["iss_position"]["longitude"])
         # custom CSS to make the outside div a little smaller
         styl = "<style> iframe[title='st.iframe'] {height:200%;width:100%}</style>"
         app.markdown(styl, unsafe_allow_html=True)
-    with col2:
-        iss_personel = requests.get("http://api.open-notify.org/astros.json").json()
-        app.markdown("#### **People on the ISS**")
+    with col2: # cut personnel in half
         # write directly to page
-        for people in iss_personel['people']:
+        for people in iss_personel[:half]:
             app.write(people['name'])
+    with col3: # other half of personnel
+        for people in iss_personel[half:]:
+            app.write(people['name'])
+
+
 
 def now_later_list():
     # structure output
-    past_and_future = {
-        'now':[""],
-        'later':[""]
-    }
+    past_and_future = {'now':[""], 'later':[""]}
     # date formatting
     date_format = "%Y-%m-%d"
     date_today = date.today()

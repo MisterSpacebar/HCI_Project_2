@@ -16,10 +16,7 @@ spacex_all_launches = requests.get("https://api.spacexdata.com/v5/launches").jso
 spacex_launch_date_list = []
 
 nasa_key = "jIUaYAKcKc59QEa9el6p1mFpiBBrRTjMY2rb99f5"
-nasa_launch_location = {
-    "latitude": 28.573469,
-    "longitude": -80.651070
-}
+nasa_launch_location = { "latitude": 28.573469,"longitude": -80.651070 }
 
 # makes a map
 def map_creator(latitude,longitude):
@@ -110,7 +107,7 @@ def spacex_date_select():
 def spacex_payload_data(payload_id):
     payload_data = {}
     # request data from sever
-    payload = requests.get("https://api.spacexdata.com/v4/payloads/{0}".format((payload_id))).json()
+    payload = requests.get("https://api.spacexdata.com/v4/payloads/{0}".format(payload_id)).json()
     # limit response to only what we need
     if payload["name"]:
         payload_data["name"] = payload["name"]
@@ -222,4 +219,3 @@ def past_launch_count():
     app.bar_chart(launch_data)
 
 app.title("SPACE!")
-

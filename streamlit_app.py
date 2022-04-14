@@ -17,10 +17,7 @@ spacex_all_launches = requests.get("https://api.spacexdata.com/v5/launches").jso
 spacex_launch_date_list = []
 
 nasa_key = "jIUaYAKcKc59QEa9el6p1mFpiBBrRTjMY2rb99f5"
-nasa_launch_location = {
-    "latitude": 28.573469,
-    "longitude": -80.651070
-}
+nasa_launch_location = { "latitude": 28.573469,"longitude": -80.651070 }
 
 # makes a map
 def map_creator(latitude,longitude):

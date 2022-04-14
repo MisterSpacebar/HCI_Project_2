@@ -61,6 +61,38 @@ def international_space_station():
         for people in iss_personel[half:]:
             app.write(people['name'])
 
+def spacex_payload_data(payload_id):
+    payload_data = {}
+    # request data from sever
+    payload = requests.get("https://api.spacexdata.com/v4/payloads/{0}".format((payload_id))).json()
+    # limit response to only what we need
+    if payload["name"]:
+        payload_data["name"] = payload["name"]
+    if payload["type"]:
+        payload_data["type"] = payload["type"]
+    if payload["mass_kg"]:
+        payload_data["mass"] = payload["mass_kg"]
+    # return object
+    app.write(payload_data)
+    return payload_data
+
+def spacex_crew_data(crew_ids):
+    astronauts = []
+    for crew in crew_ids:
+        astronaut = {}
+        # request crew data from server
+        space_man = requests.get("https://api.spacexdata.com/v4/crew/{0}".format(crew)).json()
+        # reconfigure only for data we care about
+        astronaut["name"] = space_man["name"]
+        astronaut["agency"] = space_man["agency"]
+        astronaut["portrait"] = space_man["image"]
+        astronaut["link"] = space_man["wikipedia"]
+        # push to array
+        astronauts.append(astronaut)
+    # return array of astronaut data
+    app.write(astronauts)
+    return astronauts
+
 def now_later_list():
     # structure output
     past_and_future = {'now':[""], 'later':[""]}

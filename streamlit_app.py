@@ -223,5 +223,3 @@ def past_launch_count():
 
 app.title("SPACE!")
 
-nasa_fotd(nasa_key)
-international_space_station()

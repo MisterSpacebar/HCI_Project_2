@@ -9,8 +9,8 @@ import json
 # make page wider
 app.set_page_config(layout="wide")
 # bootstrap css and script for carousel
-components.html('<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-1BmE4kWBq78iYhFldvKuhfTAU6auU8tT94WrHftjDbrCEXSU1oBoqyl2QvZ6jIW3" crossorigin="anonymous">'
-                '<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-ka7Sk0Gln4gmtz2MlQnikT1wXgYsOg+OMhuP+IlRH9sENBO0LRn5q+8nbTov4+1p" crossorigin="anonymous"></script>')
+#components.html('<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-1BmE4kWBq78iYhFldvKuhfTAU6auU8tT94WrHftjDbrCEXSU1oBoqyl2QvZ6jIW3" crossorigin="anonymous">'
+#                '<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-ka7Sk0Gln4gmtz2MlQnikT1wXgYsOg+OMhuP+IlRH9sENBO0LRn5q+8nbTov4+1p" crossorigin="anonymous"></script>')
 
 # API requests on page load for non-dynamic routes
 spacex_past_launches = requests.get("https://api.spacexdata.com/v5/launches/past").json()
@@ -50,7 +50,7 @@ def international_space_station():
     with col1: # ISS map
         map_creator(iss_position["iss_position"]["latitude"], iss_position["iss_position"]["longitude"])
         # custom CSS to make the outside div a little smaller
-        styl = "<style> iframe[title='st.iframe'] {height:200%;width:100%}</style>"
+        styl = "<style> iframe[title='st.iframe'] {height:200%;width:100%;margin-bottom:25%}</style>"
         app.markdown(styl, unsafe_allow_html=True)
     with col2: # cut personnel in half
         # write directly to page
@@ -208,7 +208,7 @@ def space_coast_weather():
         app.write("Not available")
 
 def past_launch_count():
-    app.write("Timeline of Space X Launches")
+    app.markdown("#### **Timeline of SpaceX Launches**")
     # count how many launches per pear by brute force
     launch_years = []
     for i in spacex_past_launches:
@@ -220,6 +220,8 @@ def past_launch_count():
     launch_data = pd.Series(spacex_launches)
     # display chart
     app.bar_chart(launch_data)
+    # custom CSS to make the outside div a little smaller
+    styl = "<style> div[data-testid='stArrowVegaLiteChart'] {width:1000px}</style>"
+    app.markdown(styl, unsafe_allow_html=True)
 
 app.title("SPACE!")
-

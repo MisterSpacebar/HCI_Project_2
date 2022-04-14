@@ -12,12 +12,14 @@ app.set_page_config(layout="wide")
 # API requests on page load for non-dynamic routes
 spacex_past_launches = requests.get("https://api.spacexdata.com/v5/launches/past").json()
 spacex_all_launches = requests.get("https://api.spacexdata.com/v5/launches").json()
-
 # master launch date list
 spacex_launch_date_list = []
 
 nasa_key = "jIUaYAKcKc59QEa9el6p1mFpiBBrRTjMY2rb99f5"
-nasa_launch_location = { "latitude": 28.573469,"longitude": -80.651070 }
+nasa_launch_location = {
+    "latitude": 28.573469,
+    "longitude": -80.651070
+}
 
 # makes a map
 def map_creator(latitude,longitude):
@@ -57,38 +59,6 @@ def international_space_station():
     with col3: # other half of personnel
         for people in iss_personel[half:]:
             app.write(people['name'])
-
-def spacex_payload_data(payload_id):
-    payload_data = {}
-    # request data from sever
-    payload = requests.get("https://api.spacexdata.com/v4/payloads/{0}".format((payload_id))).json()
-    # limit response to only what we need
-    if payload["name"]:
-        payload_data["name"] = payload["name"]
-    if payload["type"]:
-        payload_data["type"] = payload["type"]
-    if payload["mass_kg"]:
-        payload_data["mass"] = payload["mass_kg"]
-    # return object
-    app.write(payload_data)
-    return payload_data
-
-def spacex_crew_data(crew_ids):
-    astronauts = []
-    for crew in crew_ids:
-        astronaut = {}
-        # request crew data from server
-        space_man = requests.get("https://api.spacexdata.com/v4/crew/{0}".format(crew)).json()
-        # reconfigure only for data we care about
-        astronaut["name"] = space_man["name"]
-        astronaut["agency"] = space_man["agency"]
-        astronaut["portrait"] = space_man["image"]
-        astronaut["link"] = space_man["wikipedia"]
-        # push to array
-        astronauts.append(astronaut)
-    # return array of astronaut data
-    app.write(astronauts)
-    return astronauts
 
 def now_later_list():
     # structure output
@@ -137,6 +107,38 @@ def spacex_date_select():
     elif date_select not in templist: # doesn't exist, try again
         app.write("This is not a date, please try again")
 
+def spacex_payload_data(payload_id):
+    payload_data = {}
+    # request data from sever
+    payload = requests.get("https://api.spacexdata.com/v4/payloads/{0}".format((payload_id))).json()
+    # limit response to only what we need
+    if payload["name"]:
+        payload_data["name"] = payload["name"]
+    if payload["type"]:
+        payload_data["type"] = payload["type"]
+    if payload["mass_kg"]:
+        payload_data["mass"] = payload["mass_kg"]
+    # return object
+    app.write(payload_data)
+    return payload_data
+
+def spacex_crew_data(crew_ids):
+    astronauts = []
+    for crew in crew_ids:
+        astronaut = {}
+        # request crew data from server
+        space_man = requests.get("https://api.spacexdata.com/v4/crew/{0}".format(crew)).json()
+        # reconfigure only for data we care about
+        astronaut["name"] = space_man["name"]
+        astronaut["agency"] = space_man["agency"]
+        astronaut["portrait"] = space_man["image"]
+        astronaut["link"] = space_man["wikipedia"]
+        # push to array
+        astronauts.append(astronaut)
+    # return array of astronaut data
+    app.write(astronauts)
+    return astronauts
+
 def spacex_launch_overview (date):
     launch_data = {} # returning an object
     for i in spacex_all_launches:
@@ -173,6 +175,7 @@ def spacex_launch_overview (date):
             else:
                 launch_data["crew"] = "n/a"
     # return re-interpreted object
+    app.write(launch_data)
     return launch_data
 
 def nasa_fotd(api_key):
@@ -184,7 +187,7 @@ def nasa_fotd(api_key):
     with col1: # image
         app.image(nasa_potd["hdurl"], width=450)
     with col2: # factoid
-        app.write(nasa_potd["explanation"])
+        app.info(nasa_potd["explanation"])
 
 def space_coast_weather():
     space_center_weather = requests.get(
@@ -220,6 +223,3 @@ def past_launch_count():
 
 app.title("SPACE!")
 
-spacex_date_select()
-nasa_fotd(nasa_key)
-international_space_station()

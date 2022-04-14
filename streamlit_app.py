@@ -108,6 +108,44 @@ def spacex_date_select():
     elif date_select not in templist: # doesn't exist, try again
         app.write("This is not a date, please try again")
 
+def spacex_launch_overview (date):
+    launch_data = {} # returning an object
+    for i in spacex_all_launches:
+        # set up temporary variables
+        astronauts = []
+        temp_date = i["date_utc"]
+        temp_date = temp_date[0:10]
+        if temp_date == date:
+            # checks for crew
+            if i["crew"]:
+                for crew in i["crew"]:
+                    astronauts.append(crew["crew"])
+            # checks for images of the launch
+            if i["links"]["flickr"]["original"]:
+                launch_data["images"] = i["links"]["flickr"]["original"]
+            else:
+                launch_data["images"] = "n/a"
+            # checks for mission uniform patch
+            if i["links"]["patch"]["large"]:
+                launch_data["patch"] = i["links"]["patch"]["large"]
+            # set mission name
+            launch_data["mission_name"] = i["name"]
+            # set mission flight number
+            launch_data["flight"] = i["flight_number"]
+            # set flight details
+            launch_data["details"] = i["details"]
+            # payload ids, will need to individually parse
+            launch_data["payload_id"] = i["payloads"]
+            # flight article if there is one, otherwise null
+            launch_data["link"] = i["links"]["article"]
+            # set crew ids, will need to individually parse
+            if i["crew"]:
+                launch_data["crew"] = astronauts
+            else:
+                launch_data["crew"] = "n/a"
+    # return re-interpreted object
+    return launch_data
+
 def nasa_fotd(api_key):
     nasa_potd = requests.get(
         "https://api.nasa.gov/planetary/apod?api_key={0}".format(api_key)).json()

@@ -8,9 +8,6 @@ import json
 
 # make page wider
 app.set_page_config(layout="wide")
-# bootstrap css and script for carousel
-#components.html('<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-1BmE4kWBq78iYhFldvKuhfTAU6auU8tT94WrHftjDbrCEXSU1oBoqyl2QvZ6jIW3" crossorigin="anonymous">'
-#                '<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-ka7Sk0Gln4gmtz2MlQnikT1wXgYsOg+OMhuP+IlRH9sENBO0LRn5q+8nbTov4+1p" crossorigin="anonymous"></script>')
 
 # API requests on page load for non-dynamic routes
 spacex_past_launches = requests.get("https://api.spacexdata.com/v5/launches/past").json()
@@ -32,6 +29,15 @@ def map_creator(latitude,longitude):
     folium.Marker([latitude, longitude], popup="International Space Station", tooltip="International Space Station").add_to(m)
     # call to render Folium map in Streamlit
     folium_static(f)
+
+# uses a slide selector to make a fake carousel for images
+def slider_carousel(carousel_label,image_array,image_width):
+    carousel = app.select_slider(carousel_label,options=image_array,format_func=lambda x:"")
+    substring = "youtube.com"
+    if substring in carousel: # filter for youtube video
+        app.video(carousel)
+    else: # regular images
+        app.image(carousel,width=image_width)
 
 # displays ISS location in relation to globe
 def international_space_station():
@@ -62,7 +68,7 @@ def international_space_station():
 
 def now_later_list():
     # structure output
-    past_and_future = {'now':[""], 'later':[""]}
+    past_and_future = {'now':[], 'later':[]}
     # date formatting
     date_format = "%Y-%m-%d"
     date_today = date.today()
@@ -99,13 +105,14 @@ def spacex_date_select():
             for index in spacex_launch_date_list:
                 templist.append(index)
     with col2: # drop-down menu with search
+        templist.insert(0, "Search or select a launch date (YYYY-MM-DD)...")
         date_select = app.selectbox("Search or select a launch date (YYYY-MM-DD)...", templist)
     # return the date if true
     if date_select:
         app.write(date_select)
         return date_select
     elif date_select not in templist: # doesn't exist, try again
-        app.write("This is not a date, please try again")
+        app.warning("This is not a date, please try again")
 
 def spacex_payload_data(payload_id):
     payload_data = {}
@@ -116,10 +123,9 @@ def spacex_payload_data(payload_id):
         payload_data["name"] = payload["name"]
     if payload["type"]:
         payload_data["type"] = payload["type"]
-    if payload["mass_kg"]:
+    if payload["mass_kg"] != 'null':
         payload_data["mass"] = payload["mass_kg"]
     # return object
-    app.write(payload_data)
     return payload_data
 
 def spacex_crew_data(crew_ids):
@@ -136,7 +142,6 @@ def spacex_crew_data(crew_ids):
         # push to array
         astronauts.append(astronaut)
     # return array of astronaut data
-    app.write(astronauts)
     return astronauts
 
 def spacex_launch_overview (date):
@@ -169,13 +174,14 @@ def spacex_launch_overview (date):
             launch_data["payload_id"] = i["payloads"]
             # flight article if there is one, otherwise null
             launch_data["link"] = i["links"]["article"]
+            # flight youtube video if available
+            launch_data["video"] = i["links"]["youtube_id"]
             # set crew ids, will need to individually parse
             if i["crew"]:
                 launch_data["crew"] = astronauts
             else:
                 launch_data["crew"] = "n/a"
     # return re-interpreted object
-    app.write(launch_data)
     return launch_data
 
 def nasa_fotd(api_key):
@@ -224,4 +230,113 @@ def past_launch_count():
     styl = "<style> div[data-testid='stArrowVegaLiteChart'] {width:1000px}</style>"
     app.markdown(styl, unsafe_allow_html=True)
 
-app.title("SPACE!")
+# writes onto page as links to wikipedia
+def crew_display(crew_array):
+    for astronaut in crew_array:
+        app.write("[{0}]({1})".format(astronaut["name"], astronaut["link"]))
+
+def payload_display(payload_array):
+    for payload in payload_array:
+        # fetch payload data
+        payload_data = spacex_payload_data(payload)
+        # write onto page if true
+        if payload_data["name"]:
+            app.write("Payload: ", payload_data["name"])
+        else:
+            app.warning("Payload name no available")
+        if payload_data["type"]:
+            app.write("Type: ", payload_data["type"])
+        else:
+            app.warning("Payload type data no available")
+        if payload_data["mass"]:
+            app.write("Weight: ", payload_data["mass"], "kg")
+        else:
+            app.warning("Mass data not Available")
+
+header_column1,header_column2 = app.columns([7,1])
+with header_column1:
+    app.title("SPACE!")
+with header_column2:
+    if 'happy' not in app.session_state:
+        app.session_state.happy = False
+    app.session_state.happy = app.checkbox("Reset")
+
+date_select = spacex_date_select()
+# declare all potential elements to be empty
+launch_slider = app.empty()
+launch_name = app.empty()
+flight_number = app.empty()
+flight_details = app.empty()
+detail_warning = app.empty()
+payload_title = app.empty()
+display_payload = app.empty()
+payload_warning = app.empty()
+crew_title = app.empty()
+display_crew = app.empty()
+flight_crew_warning = app.empty()
+# empty home page elements
+fact_of_the_day = app.empty()
+iss_location = app.empty()
+past_launch_graph = app.empty()
+
+if date_select != "Search or select a launch date (YYYY-MM-DD)...":
+    launch_date = spacex_launch_overview(date_select)
+    col1,col2,col3= app.columns([2,2,1])
+    # mission pictures
+    with col1:
+        if launch_date["patch"]:
+            images = []
+            images.append(launch_date["patch"])
+            # attach images
+            if launch_date["images"]:
+                for image in launch_date["images"]:
+                    images.append(image)
+            # attach youtube video
+            if launch_date["video"]:
+                images.append("https://www.youtube.com/watch?v={0}".format(launch_date["video"]))
+            # create carousel
+            launch_slider = slider_carousel("Images: {0}".format(len(images)),images,585)
+    with col2:
+        # title and flight number
+        launch_name = app.markdown("#### **{0}**".format(launch_date["mission_name"]))
+        flight_number = app.write("Flight Number: ",launch_date["flight"])
+        # write details
+        if launch_date["details"]:
+            flight_details = app.write(launch_date["details"])
+        else:
+            detail_warning = app.warning("No summary available")
+        # write link
+        if launch_date["link"]:
+            flight_article = app.write("[Article]({0})".format(launch_date["link"]))
+        else:
+            article_warning = app.warning("No article link available")
+        # write payload info
+        if launch_date["payload_id"]:
+            payload_title = app.markdown("##### **Payload Details**")
+            display_payload = payload_display(launch_date["payload_id"])
+        else:
+            payload_warning = app.warning("No payload details")
+    with col3:
+        if launch_date["crew"] != "n/a":
+            crew_title = app.markdown("#### **Mission Crew**")
+            launch_crew = spacex_crew_data(launch_date["crew"])
+            # display crew names as links
+            display_crew = crew_display(launch_crew)
+            # assemble crew photos
+            launch_crew_portrait = []
+            for portrait in launch_crew:
+                launch_crew_portrait.append(portrait["portrait"])
+            # display crew photos as carousel
+            crew_carousel = slider_carousel("Crew",launch_crew_portrait,285)
+        else:
+            flight_crew_warning = app.warning("This mission was not crewed")
+elif date_select == "Search or select a launch date (YYYY-MM-DD)...":
+    # returns to main page
+    fact_of_the_day = nasa_fotd(nasa_key)
+    iss_location = international_space_station()
+    past_launch_graph = past_launch_count()
+elif app.session_state.happy is True: # currently non-working
+    fact_of_the_day = nasa_fotd(nasa_key)
+    iss_location = international_space_station()
+    past_launch_graph = past_launch_count()
+    app.session_state.happy = False

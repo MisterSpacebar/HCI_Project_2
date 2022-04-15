@@ -16,7 +16,7 @@ spacex_all_launches = requests.get("https://api.spacexdata.com/v5/launches").jso
 spacex_launch_date_list = []
 
 nasa_key = "jIUaYAKcKc59QEa9el6p1mFpiBBrRTjMY2rb99f5"
-nasa_launch_location = { "latitude": 28.573469,"longitude": -80.651070 }
+#nasa_launch_location = { "latitude": 28.573469,"longitude": -80.651070 }
 
 # makes a map
 def map_creator(latitude,longitude):
@@ -195,7 +195,7 @@ def nasa_fotd(api_key):
     with col2: # factoid
         app.info(nasa_potd["explanation"])
 
-def space_coast_weather():
+def space_coast_weather(): # didn't end up being used
     space_center_weather = requests.get(
         "https://api.airvisual.com/v2/city?city=cocoa&state=florida&country=usa&key=b6cc269a-2d68-483b-b036-42132725e5ba").json()
     space_center_temp = space_center_weather["data"]["current"]["weather"]["tp"]
@@ -233,7 +233,7 @@ def past_launch_count():
 # writes onto page as links to wikipedia
 def crew_display(crew_array):
     for astronaut in crew_array:
-        app.write("[{0}]({1})".format(astronaut["name"], astronaut["link"]))
+        app.write("[{0}]({1}) ({2})".format(astronaut["name"],astronaut["link"],astronaut["agency"]))
 
 def payload_display(payload_array):
     for payload in payload_array:
@@ -256,10 +256,10 @@ def payload_display(payload_array):
 header_column1,header_column2 = app.columns([7,1])
 with header_column1:
     app.title("SPACE!")
-with header_column2:
-    if 'happy' not in app.session_state:
-        app.session_state.happy = False
-    app.session_state.happy = app.checkbox("Reset")
+#with header_column2:
+#    if 'happy' not in app.session_state:
+#        app.session_state.happy = False
+#    app.session_state.happy = app.checkbox("Reset")
 
 date_select = spacex_date_select()
 # declare all potential elements to be empty

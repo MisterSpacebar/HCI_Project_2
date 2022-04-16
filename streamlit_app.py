@@ -22,10 +22,10 @@ nasa_key = "jIUaYAKcKc59QEa9el6p1mFpiBBrRTjMY2rb99f5"
 def map_creator(latitude,longitude):
     from streamlit_folium import folium_static
     import folium
-    # center on the station
+    # figure will only adjust element size, NOT FOR THE ENTIRE DIV
     f = folium.Figure(width=400, height=350)
     m = folium.Map(location=[latitude, longitude], zoom_start=2, max_bounds=True).add_to(f)
-    # add marker for the station
+    # add marker for the station location
     folium.Marker([latitude, longitude], popup="International Space Station", tooltip="International Space Station").add_to(m)
     # call to render Folium map in Streamlit
     folium_static(f)
@@ -49,6 +49,7 @@ def international_space_station():
         app.markdown("#### **People on the ISS**")
     iss_position = requests.get("http://api.open-notify.org/iss-now.json").json()
     iss_personel = requests.get("http://api.open-notify.org/astros.json").json()
+    # only care about names for now
     iss_personel = iss_personel['people']
     half = (len(iss_personel) // 2) # must be int
     # content
@@ -56,8 +57,8 @@ def international_space_station():
     with col1: # ISS map
         map_creator(iss_position["iss_position"]["latitude"], iss_position["iss_position"]["longitude"])
         # custom CSS to make the outside div a little smaller
-        styl = "<style> iframe[title='st.iframe'] {height:200%;width:100%;margin-bottom:25%}</style>"
-        app.markdown(styl, unsafe_allow_html=True)
+        # margin-bottom is semi-necessarily is there are elements under this element; can overlap
+        app.markdown("<style> iframe[title='st.iframe'] {height:200%;width:100%;margin-bottom:25%}</style>", unsafe_allow_html=True)
     with col2: # cut personnel in half
         # write directly to page
         for people in iss_personel[:half]:
@@ -69,7 +70,7 @@ def international_space_station():
 def now_later_list():
     # structure output
     past_and_future = {'now':[], 'later':[]}
-    # date formatting
+    # date format to YYYY-MM-DD
     date_format = "%Y-%m-%d"
     date_today = date.today()
     # create date lists
@@ -79,6 +80,7 @@ def now_later_list():
         # format temp variant to date format
         datetime_temp = datetime.strptime(date_temp[0:10],date_format)
         datetime_temp = datetime_temp.date()
+        # split future launches from past launches
         if datetime_temp < date_today: # past
             past_and_future['now'].append(date_temp[0:10])
         elif datetime_temp > date_today: # future
@@ -129,7 +131,7 @@ def spacex_payload_data(payload_id):
     payload_data = {}
     # request data from sever
     payload = requests.get("https://api.spacexdata.com/v4/payloads/{0}".format(payload_id)).json()
-    # limit response to only what we need
+    # re-route response limit to what we might want
     if payload["name"]:
         payload_data["name"] = payload["name"]
     if payload["type"]:
@@ -251,6 +253,7 @@ def payload_display(payload_array):
         # fetch payload data
         payload_data = spacex_payload_data(payload)
         # write onto page if true
+        # will send warning if not available
         if payload_data["name"]:
             app.write("Payload: ", payload_data["name"])
         else:
@@ -264,8 +267,8 @@ def payload_display(payload_array):
         else:
             app.warning("Mass data not Available")
 
-header_column1,header_column2 = app.columns([7,1])
-with header_column1:
+#header_column1,header_column2 = app.columns([7,1])
+#with header_column1:
     app.title("SPACE!")
 #with header_column2:
 #    if 'happy' not in app.session_state:
@@ -290,6 +293,7 @@ fact_of_the_day = app.empty()
 iss_location = app.empty()
 past_launch_graph = app.empty()
 
+# pseudo-state-like response is centered around selectbox
 if date_select != "Search or select a launch date (YYYY-MM-DD)...":
     # retrieve data
     launch_date = spacex_launch_overview(date_select)
@@ -318,7 +322,7 @@ if date_select != "Search or select a launch date (YYYY-MM-DD)...":
             flight_details = app.write(launch_date["details"])
         else:
             detail_warning = app.warning("No summary available")
-        # write link
+        # writes link to article about this launch
         if launch_date["link"]:
             flight_article = app.write("[Article]({0})".format(launch_date["link"]))
         else:
@@ -343,6 +347,7 @@ if date_select != "Search or select a launch date (YYYY-MM-DD)...":
             crew_carousel = slider_carousel("Crew",launch_crew_portrait,285)
         else:
             flight_crew_warning = app.warning("This mission was not crewed")
+# returning first value (only non-date value) will return user to main page
 elif date_select == "Search or select a launch date (YYYY-MM-DD)...":
     # returns to main page
     fact_of_the_day = nasa_fotd(nasa_key)

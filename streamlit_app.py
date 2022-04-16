@@ -102,11 +102,12 @@ def spacex_date_select():
         elif past_future == 'Future':
             templist = templist['later']
         else:
+            templist = []
             for index in spacex_launch_date_list:
                 templist.append(index)
     with col2: # drop-down menu with search
         templist.insert(0, "Search or select a launch date (YYYY-MM-DD)...")
-        date_select = app.selectbox("Search or select a launch date (YYYY-MM-DD)...", templist)
+        date_select = app.selectbox("Returning this element to its first item ('Search or select...') will return the entire site to its default page", templist)
     # return the date if true
     if date_select:
         app.write(date_select)

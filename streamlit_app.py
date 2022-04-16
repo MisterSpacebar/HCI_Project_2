@@ -15,6 +15,9 @@ spacex_all_launches = requests.get("https://api.spacexdata.com/v5/launches").jso
 # master launch date list
 spacex_launch_date_list = []
 
+# image not available photo
+image_not_available = "https://cdn.discordapp.com/attachments/961742574408851497/964745979721048064/unknown.png"
+
 nasa_key = "jIUaYAKcKc59QEa9el6p1mFpiBBrRTjMY2rb99f5"
 #nasa_launch_location = { "latitude": 28.573469,"longitude": -80.651070 }
 
@@ -170,13 +173,18 @@ def spacex_launch_overview (date):
                 for crew in i["crew"]:
                     astronauts.append(crew["crew"])
             # checks for images of the launch
-            if i["links"]["flickr"]["original"]:
+            if len(i["links"]["flickr"]["original"]) > 0:
                 launch_data["images"] = i["links"]["flickr"]["original"]
             else:
-                launch_data["images"] = "n/a"
+                # no image available if no images
+                launch_data["images"] = []
+                launch_data["images"].append(image_not_available)
             # checks for mission uniform patch
             if i["links"]["patch"]["large"]:
                 launch_data["patch"] = i["links"]["patch"]["large"]
+            else:
+                # no image available if no image
+                launch_data["patch"] = image_not_available
             # set mission name
             launch_data["mission_name"] = i["name"]
             # set mission flight number
@@ -188,7 +196,11 @@ def spacex_launch_overview (date):
             # flight article if there is one, otherwise null
             launch_data["link"] = i["links"]["article"]
             # flight youtube video if available
-            launch_data["video"] = i["links"]["youtube_id"]
+            if i["links"]["youtube_id"]:
+                launch_data["video"] = i["links"]["youtube_id"]
+            else:
+                # video will be null if it doesn't exist
+                launch_data["video"] = None
             # set crew ids, will need to individually parse
             if i["crew"]:
                 launch_data["crew"] = astronauts
@@ -303,18 +315,18 @@ if date_select != "Search or select a launch date (YYYY-MM-DD)...":
     col1,col2,col3= app.columns([2,2,1])
     # mission pictures
     with col1:
+        images = []
         if launch_date["patch"]:
-            images = []
             images.append(launch_date["patch"])
-            # attach images
-            if launch_date["images"]:
-                for image in launch_date["images"]:
-                    images.append(image)
-            # attach youtube video
-            if launch_date["video"]:
-                images.append("https://www.youtube.com/watch?v={0}".format(launch_date["video"]))
-            # create carousel
-            launch_slider = slider_carousel("Images: {0}".format(len(images)),images,585)
+        # attach images
+        if launch_date["images"]:
+            for image in launch_date["images"]:
+                images.append(image)
+        # attach youtube video
+        if launch_date["video"]:
+            images.append("https://www.youtube.com/watch?v={0}".format(launch_date["video"]))
+        # create carousel
+        launch_slider = slider_carousel("Images: {0}".format(len(images)),images,585)
     with col2:
         # title and flight number
         launch_name = app.markdown("#### **{0}**".format(launch_date["mission_name"]))

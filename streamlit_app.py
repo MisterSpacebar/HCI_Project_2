@@ -19,7 +19,9 @@ spacex_launch_date_list = []
 # image not available photo
 image_not_available = "https://cdn.discordapp.com/attachments/961742574408851497/964745979721048064/unknown.png"
 
+# nasa api key -- should be obfuscated in the future
 nasa_key = "jIUaYAKcKc59QEa9el6p1mFpiBBrRTjMY2rb99f5"
+# didn't end up using nasa launch pad coordinates
 #nasa_launch_location = { "latitude": 28.573469,"longitude": -80.651070 }
 
 # makes a map
@@ -27,7 +29,7 @@ def map_creator(latitude,longitude):
     from streamlit_folium import folium_static
     import folium
     # figure will only adjust element size, NOT FOR THE ENTIRE DIV
-    f = folium.Figure(width=400, height=350)
+    f = folium.Figure(width=450, height=400)
     m = folium.Map(location=[latitude, longitude], zoom_start=2, max_bounds=True).add_to(f)
     # add marker for the station location
     folium.Marker([latitude, longitude], popup="International Space Station", tooltip="International Space Station").add_to(m)
@@ -36,11 +38,13 @@ def map_creator(latitude,longitude):
 
 # uses a slide selector to make a fake carousel for images
 def slider_carousel(carousel_label,image_array,image_width):
-    carousel = app.select_slider(carousel_label,options=image_array,format_func=lambda x:"")
+    carousel = app.select_slider(carousel_label,key="carousel_slider",options=image_array,format_func=lambda x:"")
     substring = "youtube.com"
-    if substring in carousel: # filter for youtube video
+    # filter for youtube video
+    if substring in carousel:
         app.video(carousel)
-    else: # regular images
+    else:
+        # regular images
         app.image(carousel,width=image_width)
 
 # displays fact of the day
@@ -96,6 +100,7 @@ def international_space_station():
             # retrieve data from server
             ethnic_get = requests.get("https://lldev.thespacedevs.com/2.2.0/astronaut/?search={0}".format(astronaut_last_name)).json()
             # only count successful matches
+            # WARNING: THIS MEANS PIE CHART MAY NOT BE 100% ACCURATE -- FIX IF ABLE
             if ethnic_get["count"]>0:
                 ethnic = ethnic_get["results"][0]
                 ethnicities.append(ethnic["nationality"])
@@ -110,6 +115,27 @@ def international_space_station():
         # draw pie chart
         app.pyplot(fig1)
 
+# didn't end up being used
+def space_coast_weather():
+    space_center_weather = requests.get(
+        "https://api.airvisual.com/v2/city?city=cocoa&state=florida&country=usa&key=b6cc269a-2d68-483b-b036-42132725e5ba").json()
+    # CEN3721 UHB 1221 - HCI Spring 2022 - Project 2 - Yibin Wei
+    space_center_temp = space_center_weather["data"]["current"]["weather"]["tp"]
+    space_center_humid = space_center_weather["data"]["current"]["weather"]["hu"]
+    space_station_weather = app.radio('Select a unit', options=('F', 'C'))
+    # custom CSS to have the radio buttons in a line
+    app.write('<style>div.row-widget.stRadio > div{flex-direction:row;}</style>', unsafe_allow_html=True)
+    if space_station_weather == 'C':
+        app.write("Kennedy Space Center Weather: {0} degrees with {1}% humidity".format(int(space_center_temp),
+                                                                                        space_center_humid))
+    elif space_station_weather == 'F':
+        app.write(
+            "Kennedy Space Center Weather: {0} degrees with {1}% humidity".format(int(space_center_temp * 1.8 + 32),
+                                                                                  space_center_humid))
+    else:
+        app.write("Not available")
+
+# chart that details how many launches per year of spacex operation
 def past_launch_count():
     app.markdown("#### **Timeline of SpaceX Launches**")
     # count how many launches per pear by brute force
@@ -266,24 +292,6 @@ def spacex_launch_overview (date):
     # return re-interpreted object
     return launch_data
 
-def space_coast_weather(): # didn't end up being used
-    space_center_weather = requests.get(
-        "https://api.airvisual.com/v2/city?city=cocoa&state=florida&country=usa&key=b6cc269a-2d68-483b-b036-42132725e5ba").json()
-    space_center_temp = space_center_weather["data"]["current"]["weather"]["tp"]
-    space_center_humid = space_center_weather["data"]["current"]["weather"]["hu"]
-    space_station_weather = app.radio('Select a unit', options=('F', 'C'))
-    # custom CSS to have the radio buttons in a line
-    app.write('<style>div.row-widget.stRadio > div{flex-direction:row;}</style>', unsafe_allow_html=True)
-    if space_station_weather == 'C':
-        app.write("Kennedy Space Center Weather: {0} degrees with {1}% humidity".format(int(space_center_temp),
-                                                                                        space_center_humid))
-    elif space_station_weather == 'F':
-        app.write(
-            "Kennedy Space Center Weather: {0} degrees with {1}% humidity".format(int(space_center_temp * 1.8 + 32),
-                                                                                  space_center_humid))
-    else:
-        app.write("Not available")
-
 # writes onto page as links to wikipedia
 def crew_display(crew_array):
     for astronaut in crew_array:
@@ -317,6 +325,7 @@ def payload_display(payload_array):
 
 # would go into header_column1 otherwise but pseudo-state resets is currently non-functional
 app.title("SPACE!")
+app.write("Just a basic repository of SpaceX launches")
 
 date_select = spacex_date_select()
 # declare all potential elements to be empty
@@ -362,7 +371,7 @@ if date_select != "Search or select a launch date (YYYY-MM-DD)...":
         flight_number = app.write("Flight Number: ",launch_date["flight"])
         # write details
         if launch_date["details"]:
-            flight_details = app.write(launch_date["details"])
+            flight_details = app.info(launch_date["details"])
         else:
             detail_warning = app.warning("No summary available")
         # writes link to article about this launch
@@ -387,7 +396,7 @@ if date_select != "Search or select a launch date (YYYY-MM-DD)...":
             for portrait in launch_crew:
                 launch_crew_portrait.append(portrait["portrait"])
             # display crew photos as carousel
-            crew_carousel = slider_carousel("Crew",launch_crew_portrait,285)
+            crew_carousel = slider_carousel("Crew: {0}".format(len(launch_crew_portrait)),launch_crew_portrait,285)
         else:
             flight_crew_warning = app.warning("This mission was not crewed")
 # returning first value (only non-date value) will return user to main page

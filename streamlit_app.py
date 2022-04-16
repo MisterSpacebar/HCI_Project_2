@@ -3,6 +3,7 @@ import streamlit as app
 import streamlit.components.v1 as components
 from datetime import date
 from datetime import datetime
+import matplotlib.pyplot as plt
 import requests
 import json
 
@@ -42,21 +43,35 @@ def slider_carousel(carousel_label,image_array,image_width):
     else: # regular images
         app.image(carousel,width=image_width)
 
+# displays fact of the day
+def nasa_fotd(api_key):
+    nasa_potd = requests.get(
+        "https://api.nasa.gov/planetary/apod?api_key={0}".format(api_key)).json()
+    app.markdown("#### **Fact of the Day**")
+    # separate image and info into columns
+    col1, col2 = app.columns([1,2])
+    with col1: # image
+        app.image(nasa_potd["hdurl"], width=450)
+    with col2: # factoid
+        app.info(nasa_potd["explanation"])
+
 # displays ISS location in relation to globe
 def international_space_station():
     # header for component
-    head1,head2 = app.columns(2)
+    head1,head2,head3,head4 = app.columns([2,1,1,2])
     with head1:
         app.markdown("#### **Current Location of the ISS**")
     with head2:
         app.markdown("#### **People on the ISS**")
+    with head4:
+        app.markdown("#### **Ethnicity on the ISS**")
     iss_position = requests.get("http://api.open-notify.org/iss-now.json").json()
     iss_personel = requests.get("http://api.open-notify.org/astros.json").json()
     # only care about names for now
     iss_personel = iss_personel['people']
     half = (len(iss_personel) // 2) # must be int
     # content
-    col1, col2, col3 = app.columns([2, 1, 1])
+    col1,col2,col3,col4 = app.columns([2,1,1,2])
     with col1: # ISS map
         map_creator(iss_position["iss_position"]["latitude"], iss_position["iss_position"]["longitude"])
         # custom CSS to make the outside div a little smaller
@@ -69,6 +84,48 @@ def international_space_station():
     with col3: # other half of personnel
         for people in iss_personel[half:]:
             app.write(people['name'])
+    with col4:
+        # pie chart with ISS astronaut ethnicities
+        ethnicities = []
+        # isolate ethnicities by last name
+        for astronaut in iss_personel:
+            astronaut_name = astronaut["name"]
+            # isolate last name
+            astronaut_last_name = astronaut_name.split()
+            astronaut_last_name = astronaut_last_name[-1]
+            # retrieve data from server
+            ethnic_get = requests.get("https://lldev.thespacedevs.com/2.2.0/astronaut/?search={0}".format(astronaut_last_name)).json()
+            # only count successful matches
+            if ethnic_get["count"]>0:
+                ethnic = ethnic_get["results"][0]
+                ethnicities.append(ethnic["nationality"])
+        # turn array into object
+        ethnic_object = {i: ethnicities.count(i) for i in ethnicities}
+        # pair ethnicities with values
+        labels = ethnic_object.keys()
+        sizes = ethnic_object.values()
+        fig1, ax1 = plt.subplots()
+        ax1.pie(sizes, explode=None, labels=labels, autopct='%1.1f%%', startangle=90)
+        ax1.axis('equal')
+        # draw pie chart
+        app.pyplot(fig1)
+
+def past_launch_count():
+    app.markdown("#### **Timeline of SpaceX Launches**")
+    # count how many launches per pear by brute force
+    launch_years = []
+    for i in spacex_past_launches:
+        d = i["date_utc"]
+        current_year = d[0:4]
+        launch_years.append(current_year)
+    # turn array into object with 'year':'count'
+    spacex_launches = {i: launch_years.count(i) for i in launch_years}
+    launch_data = pd.Series(spacex_launches)
+    # display chart
+    app.bar_chart(launch_data)
+    # custom CSS to make the outside div a little smaller
+    styl = "<style> div[data-testid='stArrowVegaLiteChart'] {width:1000px}</style>"
+    app.markdown(styl, unsafe_allow_html=True)
 
 def now_later_list():
     # structure output
@@ -209,17 +266,6 @@ def spacex_launch_overview (date):
     # return re-interpreted object
     return launch_data
 
-def nasa_fotd(api_key):
-    nasa_potd = requests.get(
-        "https://api.nasa.gov/planetary/apod?api_key={0}".format(api_key)).json()
-    app.markdown("#### **Fact of the Day**")
-    # separate image and info into columns
-    col1, col2 = app.columns([1,2])
-    with col1: # image
-        app.image(nasa_potd["hdurl"], width=450)
-    with col2: # factoid
-        app.info(nasa_potd["explanation"])
-
 def space_coast_weather(): # didn't end up being used
     space_center_weather = requests.get(
         "https://api.airvisual.com/v2/city?city=cocoa&state=florida&country=usa&key=b6cc269a-2d68-483b-b036-42132725e5ba").json()
@@ -237,23 +283,6 @@ def space_coast_weather(): # didn't end up being used
                                                                                   space_center_humid))
     else:
         app.write("Not available")
-
-def past_launch_count():
-    app.markdown("#### **Timeline of SpaceX Launches**")
-    # count how many launches per pear by brute force
-    launch_years = []
-    for i in spacex_past_launches:
-        d = i["date_utc"]
-        current_year = d[0:4]
-        launch_years.append(current_year)
-    # turn array into object with 'year':'count'
-    spacex_launches = {i: launch_years.count(i) for i in launch_years}
-    launch_data = pd.Series(spacex_launches)
-    # display chart
-    app.bar_chart(launch_data)
-    # custom CSS to make the outside div a little smaller
-    styl = "<style> div[data-testid='stArrowVegaLiteChart'] {width:1000px}</style>"
-    app.markdown(styl, unsafe_allow_html=True)
 
 # writes onto page as links to wikipedia
 def crew_display(crew_array):
@@ -304,8 +333,8 @@ display_crew = app.empty()
 flight_crew_warning = app.empty()
 # empty home page elements
 fact_of_the_day = app.empty()
-iss_location = app.empty()
 past_launch_graph = app.empty()
+iss_location = app.empty()
 
 # pseudo-state-like response is centered around selectbox
 if date_select != "Search or select a launch date (YYYY-MM-DD)...":
@@ -365,10 +394,10 @@ if date_select != "Search or select a launch date (YYYY-MM-DD)...":
 elif date_select == "Search or select a launch date (YYYY-MM-DD)...":
     # returns to main page
     fact_of_the_day = nasa_fotd(nasa_key)
-    iss_location = international_space_station()
     past_launch_graph = past_launch_count()
+    iss_location = international_space_station()
 elif app.session_state.happy is True: # currently non-working
     fact_of_the_day = nasa_fotd(nasa_key)
-    iss_location = international_space_station()
     past_launch_graph = past_launch_count()
+    iss_location = international_space_station()
     app.session_state.happy = False

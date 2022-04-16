@@ -91,12 +91,14 @@ def now_later_list():
 def spacex_date_select():
     # split option and search and arrange them into same row
     col1,col2 = app.columns([1,4])
+    # initialize list of dates
+    templist = now_later_list()
     with col1: # select past/present/future
         # ask user how they want to categorize search
         past_future = app.radio("Present or Future launches?",options=('Present','Future','All Launches'))
         # custom CSS to have the radio buttons in a line
         app.write('<style>div.row-widget.stRadio > div{flex-direction:row;}</style>', unsafe_allow_html=True)
-        templist = now_later_list()
+        # segregate dates between future and existing dates
         if past_future == 'Present':
             templist = templist['now']
         elif past_future == 'Future':
@@ -105,12 +107,20 @@ def spacex_date_select():
             templist = []
             for index in spacex_launch_date_list:
                 templist.append(index)
+            # scrub duplicates dates
     with col2: # drop-down menu with search
+        # scrub duplicates dates
+        duplicate_catch = []
+        for non_duplicate in templist:
+            if non_duplicate not in duplicate_catch:
+                duplicate_catch.append(non_duplicate)
+        # re-set temporary list as new non-duplicate version
+        templist = duplicate_catch
         templist.insert(0, "Search or select a launch date (YYYY-MM-DD)...")
         date_select = app.selectbox("Returning this element to its first item ('Search or select...') will return the entire site to its default page", templist)
     # return the date if true
     if date_select:
-        app.write(date_select)
+        # app.write(date_select)
         return date_select
     elif date_select not in templist: # doesn't exist, try again
         app.warning("This is not a date, please try again")
@@ -281,7 +291,9 @@ iss_location = app.empty()
 past_launch_graph = app.empty()
 
 if date_select != "Search or select a launch date (YYYY-MM-DD)...":
+    # retrieve data
     launch_date = spacex_launch_overview(date_select)
+    # split information into columns to be more easily digestible
     col1,col2,col3= app.columns([2,2,1])
     # mission pictures
     with col1:

@@ -269,11 +269,13 @@ def payload_display(payload_array):
 
 #header_column1,header_column2 = app.columns([7,1])
 #with header_column1:
-    app.title("SPACE!")
 #with header_column2:
 #    if 'happy' not in app.session_state:
 #        app.session_state.happy = False
 #    app.session_state.happy = app.checkbox("Reset")
+
+# would go into header_column1 otherwise but pseudo-state resets is currently non-functional
+app.title("SPACE!")
 
 date_select = spacex_date_select()
 # declare all potential elements to be empty
